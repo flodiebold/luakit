@@ -21,3 +21,5 @@ buildopts.h
 *.swp
 *~
 tags
+
+node_modules

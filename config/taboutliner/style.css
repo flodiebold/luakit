@@ -1,0 +1,21 @@
+ul.tabs {
+    list-style-type: none;
+    padding-left: 5px;
+    margin: 0;
+}
+
+li.tab {
+    margin-left: 5px;
+}
+
+li.tab.inactive {
+    color: #586e75;
+}
+
+body {
+    background-color: #002b36;
+    color: #839496;
+    font: 18px monospace;
+    margin: 0;
+    margin-top: 2px;
+}

@@ -178,6 +178,10 @@ require "tab_favicons"
 -- Add :view-source command
 require "view_source"
 
+require "helm"
+
+require "taboutliner"
+
 -----------------------------
 -- End user script loading --
 -----------------------------

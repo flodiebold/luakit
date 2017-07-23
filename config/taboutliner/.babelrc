@@ -1,0 +1,4 @@
+{
+    "presets": [],
+    "plugins": ["inferno", "transform-object-rest-spread"]
+}
