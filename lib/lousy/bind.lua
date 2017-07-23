@@ -297,7 +297,7 @@ end
 -- @return True if a binding was matched and called.
 -- @return True if a partial match exists.
 function _M.match_buf(object, binds, buffer, args)
-    assert(buffer and string.match(buffer, "%S"), "invalid buffer")
+    assert(buffer, "invalid buffer")
 
     local has_partial_match = false
     for _, b in ipairs(binds) do
@@ -362,6 +362,16 @@ function _M.match_cmd(object, binds, buffer, args)
     return false
 end
 
+local function transform_for_buffer(key)
+  local len = string.wlen(key)
+  if len == 1 then
+    return key
+  elseif key == "space" then
+    return " "
+  end
+  return nil
+end
+
 --- Attempt to match either a key or buffer binding and execute it. This
 -- function is also responsible for performing operations on the buffer when
 -- necessary and the buffer is enabled.
@@ -412,14 +422,16 @@ function _M.hit(object, binds, mods, key, args)
         end
     end
 
+    local for_buffer = transform_for_buffer(key)
+
     -- Clear buffer
     if not args.enable_buffer or mods then
         return false
 
     -- Else match buffer
-    elseif len == 1 then
+    elseif for_buffer ~= nil then
         if not args.updated_buf then
-            args.buffer = (args.buffer or "") .. key
+            args.buffer = (args.buffer or "") .. for_buffer
             args.updated_buf = true
         end
         local matched, partial = _M.match_buf(object, binds, args.buffer, args)

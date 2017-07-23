@@ -6,7 +6,7 @@ local globals = {
     zoom_step           = 0.1,
     max_cmd_history     = 100,
     max_srch_history    = 100,
-    default_window_size = "800x600",
+    default_window_size = "1200x1000",
     vertical_tab_width  = 200,
 
  -- Disables loading of hostnames from /etc/hosts (for large host files)

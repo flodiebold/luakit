@@ -20,7 +20,7 @@ add_binds("normal", {
     key({}, "?", "Reverse search for string on current page.",
         function (w) w:start_search("?") end),
 
-    key({}, "n", "Find next search result.", function (w, m)
+    key({}, "j", "Find next search result.", function (w, m)
         for _=1,m.count do
             w:search(nil, true)
             if w.search_state.by_view[w.view].ret == false then
@@ -29,7 +29,7 @@ add_binds("normal", {
         end
     end, {count=1}),
 
-    key({}, "N", "Find previous search result.", function (w, m)
+    key({}, "J", "Find previous search result.", function (w, m)
         for _=1,m.count do
             w:search(nil, false)
             if w.search_state.by_view[w.view].ret == false then

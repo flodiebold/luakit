@@ -8,6 +8,7 @@ if unique then
     unique.new("org.luakit")
     -- Check for a running luakit instance
     if unique.is_running() then
+        print("luakit already running, opening new tabs in the running sessions")
         if uris[1] then
             for _, uri in ipairs(uris) do
                 if lfs.attributes(uri) then uri = os.abspath(uri) end

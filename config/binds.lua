@@ -45,8 +45,8 @@ end
 -- Adds the default menu widget bindings to a mode
 local menu_binds = {
     -- Navigate items
-    key({},          "j",       "Move the menu row focus downwards.", function (w) w.menu:move_down() end),
-    key({},          "k",       "Move the menu row focus upwards.",   function (w) w.menu:move_up()   end),
+    key({"Control"}, "n",       "Move the menu row focus downwards.", function (w) w.menu:move_down() end),
+    key({"Control"}, "p",       "Move the menu row focus upwards.",   function (w) w.menu:move_up()   end),
     key({},          "Down",    "Move the menu row focus downwards.", function (w) w.menu:move_down() end),
     key({},          "Up",      "Move the menu row focus upwards.",   function (w) w.menu:move_up()   end),
     key({},          "KP_Down", "Move the menu row focus downwards.", function (w) w.menu:move_down() end),
@@ -152,16 +152,16 @@ add_binds("normal", {
         function (w) w:set_mode("command") end),
 
     -- Scrolling
-    key({}, "j", "Scroll document down.",
+    key({}, "n", "Scroll document down.",
         function (w) w:scroll{ yrel =  scroll_step } end),
 
-    key({}, "k", "Scroll document up.",
+    key({}, "e", "Scroll document up.",
         function (w) w:scroll{ yrel = -scroll_step } end),
 
-    key({}, "h", "Scroll document left.",
+    key({}, "y", "Scroll document left.",
         function (w) w:scroll{ xrel = -scroll_step } end),
 
-    key({}, "l", "Scroll document right.",
+    key({}, "o", "Scroll document right.",
         function (w) w:scroll{ xrel =  scroll_step } end),
 
     key({}, "Down", "Scroll document down.",
@@ -217,11 +217,11 @@ add_binds("normal", {
     key({"Control"}, "b", "Scroll page up.",
         function (w) w:scroll{ ypagerel = -page_step } end),
 
-    key({}, "space", "Scroll page down.",
-        function (w) w:scroll{ ypagerel =  page_step } end),
+    -- key({}, "space", "Scroll page down.",
+    --     function (w) w:scroll{ ypagerel =  page_step } end),
 
-    key({"Shift"}, "space", "Scroll page up.",
-        function (w) w:scroll{ ypagerel = -page_step } end),
+    -- key({"Shift"}, "space", "Scroll page up.",
+    --     function (w) w:scroll{ ypagerel = -page_step } end),
 
     key({}, "BackSpace", "Scroll page up.",
         function (w) w:scroll{ ypagerel = -page_step } end),
@@ -376,14 +376,14 @@ add_binds("normal", {
         end),
 
     -- Yanking
-    key({}, "y", "Yank current URI to primary selection.",
+    key({}, "h", "Yank current URI to primary selection.",
         function (w)
             local uri = string.gsub(w.view.uri or "", " ", "%%20")
             luakit.selection.primary = uri
             w:notify("Yanked uri: " .. uri)
         end),
 
-    key({}, "Y", "Yank current URI to clipboard.",
+    key({}, "H", "Yank current URI to clipboard.",
         function (w)
             local uri = string.gsub(w.view.uri or "", " ", "%%20")
             luakit.selection.clipboard = uri
@@ -397,7 +397,7 @@ add_binds("normal", {
     key({"Control"}, "x", "Decrement last number in URL.",
         function (w) w:navigate(w:inc_uri(-1)) end),
 
-    key({}, "o", "Open one or more URLs.",
+    key({}, "l", "Open one or more URLs.",
         function (w) w:enter_cmd(":open ") end),
 
     key({}, "t", "Open one or more URLs in a new tab.",
@@ -406,7 +406,7 @@ add_binds("normal", {
     key({}, "w", "Open one or more URLs in a new window.",
         function (w) w:enter_cmd(":winopen ") end),
 
-    key({}, "O", "Open one or more URLs based on current location.",
+    key({}, "L", "Open one or more URLs based on current location.",
         function (w) w:enter_cmd(":open " .. (w.view.uri or "")) end),
 
     key({}, "T",
@@ -418,10 +418,10 @@ add_binds("normal", {
         function (w) w:enter_cmd(":winopen " .. (w.view.uri or "")) end),
 
     -- History
-    key({}, "H", "Go back in the browser history `[count=1]` items.",
+    key({}, "Y", "Go back in the browser history `[count=1]` items.",
         function (w, m) w:back(m.count) end),
 
-    key({}, "L", "Go forward in the browser history `[count=1]` times.",
+    key({}, "O", "Go forward in the browser history `[count=1]` times.",
         function (w, m) w:forward(m.count) end),
 
     key({}, "XF86Back", "Go back in the browser history.",
@@ -430,11 +430,11 @@ add_binds("normal", {
     key({}, "XF86Forward", "Go forward in the browser history.",
         function (w, m) w:forward(m.count) end),
 
-    key({"Control"}, "o", "Go back in the browser history.",
-        function (w, m) w:back(m.count) end),
+    -- key({"Control"}, "o", "Go back in the browser history.",
+    --     function (w, m) w:back(m.count) end),
 
-    key({"Control"}, "i", "Go forward in the browser history.",
-        function (w, m) w:forward(m.count) end),
+    -- key({"Control"}, "i", "Go forward in the browser history.",
+    --     function (w, m) w:forward(m.count) end),
 
     -- Tab
     key({"Control"}, "Page_Up", "Go to previous tab.",
@@ -513,6 +513,9 @@ add_binds("normal", {
         function (w) w:restart() end),
 
     -- Window
+    buf("^ qq$", "Quit and save the session.",
+        function (w) w:save_session() w:close_win() end),
+
     buf("^ZZ$", "Quit and save the session.",
         function (w) w:save_session() w:close_win() end),
 

@@ -1,27 +1,45 @@
---------------------------
--- Default luakit theme --
---------------------------
+----------------------------
+-- Solarized luakit theme --
+----------------------------
+
+local solarized = {}
+solarized.base03 = "#002b36"
+solarized.base02 = "#073642"
+solarized.base01 = "#586e75"
+solarized.base00 = "#657b83"
+solarized.base0 = "#839496"
+solarized.base1 = "#93a1a1"
+solarized.base2 = "#eee8d5"
+solarized.base3 = "#fdf6e3"
+solarized.yellow = "#b58900"
+solarized.orange = "#cb4b16"
+solarized.red = "#dc322f"
+solarized.magenta = "#d33682"
+solarized.violet = "#6c71c4"
+solarized.blue = "#268bd2"
+solarized.cyan = "#2aa198"
+solarized.green = "#859900"
 
 local theme = {}
 
 -- Default settings
-theme.font = "12px monospace"
-theme.fg   = "#fff"
-theme.bg   = "#000"
+theme.font = "15px monospace"
+theme.fg   = solarized.base0
+theme.bg   = solarized.base03
 
 -- Genaral colours
-theme.success_fg = "#0f0"
-theme.loaded_fg  = "#33AADD"
+theme.success_fg = solarized.green
+theme.loaded_fg  = solarized.cyan
 theme.error_fg = "#FFF"
 theme.error_bg = "#F00"
 
 -- Warning colours
-theme.warning_fg = "#F00"
-theme.warning_bg = "#FFF"
+theme.warning_fg = solarized.orange
+theme.warning_bg = theme.bg
 
 -- Notification colours
-theme.notif_fg = "#444"
-theme.notif_bg = "#FFF"
+theme.notif_fg = solarized.base1
+theme.notif_bg = theme.bg
 
 -- Menu colours
 theme.menu_fg                   = "#000"
@@ -46,25 +64,25 @@ theme.proxy_inactive_menu_fg    = '#888'
 theme.proxy_inactive_menu_bg    = '#FFF'
 
 -- Statusbar specific
-theme.sbar_fg         = "#fff"
-theme.sbar_bg         = "#000"
+theme.sbar_fg         = solarized.base0
+theme.sbar_bg         = solarized.base03
 
 -- Downloadbar specific
-theme.dbar_fg         = "#fff"
-theme.dbar_bg         = "#000"
-theme.dbar_error_fg   = "#F00"
+theme.dbar_fg         = solarized.base0
+theme.dbar_bg         = solarized.base03
+theme.dbar_error_fg   = solarized.red
 
 -- Input bar specific
-theme.ibar_fg           = "#000"
-theme.ibar_bg           = "rgba(0,0,0,0)"
+theme.ibar_fg           = solarized.base1
+theme.ibar_bg           = solarized.base03
 
 -- Tab label
-theme.tab_fg            = "#888"
-theme.tab_bg            = "#222"
-theme.tab_hover_bg      = "#292929"
+theme.tab_fg            = solarized.base0
+theme.tab_bg            = solarized.base03
+theme.tab_hover_bg      = solarized.base02
 theme.tab_ntheme        = "#ddd"
-theme.selected_fg       = "#fff"
-theme.selected_bg       = "#000"
+theme.selected_fg       = solarized.yellow
+theme.selected_bg       = solarized.base02
 theme.selected_ntheme   = "#ddd"
 theme.loading_fg        = "#33AADD"
 theme.loading_bg        = "#000"
@@ -73,13 +91,13 @@ theme.selected_private_tab_bg = "#3d295b"
 theme.private_tab_bg    = "#22254a"
 
 -- Trusted/untrusted ssl colours
-theme.trust_fg          = "#0F0"
-theme.notrust_fg        = "#F00"
+theme.trust_fg          = solarized.green
+theme.notrust_fg        = solarized.red
 
 -- General colour pairings
-theme.ok = { fg = "#000", bg = "#FFF" }
-theme.warn = { fg = "#F00", bg = "#FFF" }
-theme.error = { fg = "#FFF", bg = "#F00" }
+theme.ok = { fg = solarized.base0, bg = solarized.base03 }
+theme.warn = { fg = solarized.orange, bg = solarized.base03 }
+theme.error = { fg = solarized.red, bg = solarized.base03 }
 
 return theme
 
