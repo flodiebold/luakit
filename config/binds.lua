@@ -4,6 +4,7 @@
 
 local window = require("window")
 local globals = require("globals")
+local taboutliner = require("taboutliner")
 
 -- Binding aliases
 local lousy = require("lousy")
@@ -475,8 +476,11 @@ add_binds("normal", {
     key({"Control"}, "w", "Close current tab.",
         function (w) w:close_tab() end),
 
-    key({}, "d", "Close current tab (or `[count]` tabs).",
-        function (w, m) for _=1,m.count do w:close_tab() end end, {count=1}),
+    key({}, "d", "Deactivate current tab (or `[count]` tabs).",
+        function (w, m) for _=1,m.count do taboutliner.deactivate_tab(w) end end, {count=1}),
+
+    key({}, "D", "Archive current tab (or `[count]` tabs).",
+      function (w, m) for _=1,m.count do taboutliner.archive_tab(w) end end, {count=1}),
 
     key({}, "<", "Reorder tab left `[count=1]` positions.",
         function (w, m)

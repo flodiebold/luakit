@@ -1,6 +1,3 @@
-local binds = require("binds")
-local menu_binds = binds.menu_binds
-local add_binds, add_cmds = binds.add_binds, binds.add_cmds
 
 local lousy = require("lousy")
 local chrome = require("chrome")
@@ -11,11 +8,35 @@ local window = require("window")
 local webview = require("webview")
 
 local modes = require("modes")
-local new_mode = modes.new_mode
+local new_mode, get_mode = modes.new_mode, modes.get_mode
+
+-- Add binds to a mode
+local function add_binds(mode, binds, before)
+  assert(binds and type(binds) == "table", "invalid binds table type: " .. type(binds))
+  mode = type(mode) ~= "table" and {mode} or mode
+  for _, m in ipairs(mode) do
+    local mdata = get_mode(m)
+    if mdata and before then
+      mdata.binds = join(binds, mdata.binds or {})
+    elseif mdata then
+      mdata.binds = mdata.binds or {}
+      for _, b in ipairs(binds) do table.insert(mdata.binds, b) end
+    else
+      new_mode(m, { binds = binds })
+    end
+  end
+end
+
+-- Add commands to command mode
+local function add_cmds(cmds, before)
+  add_binds("command", cmds, before)
+end
 
 local tabtree = {}
 
 lousy.signal.setup(tabtree, true)
+
+local _M = {}
 
 local tab_by_view = setmetatable({}, { __mode = "k" })
 
@@ -45,9 +66,15 @@ function init_webview(view)
 end
 webview.add_signal("init", init_webview)
 
+function archive_tab(tab)
+  print("archive tab", tab.title)
+end
+
 function on_tab_close(w, view)
-  tab_by_view[view].active = false
-  tabtree.emit_signal("changed")
+  local tab = tab_by_view[view]
+  if tab.active then
+    archive_tab(tab)
+  end
 end
 
 window.add_signal(
@@ -134,3 +161,17 @@ local cmd = lousy.bind.cmd
 add_cmds({
     cmd("taboutliner", "Open taboutliner window", open_taboutliner_window),
 })
+
+function _M.deactivate_tab(w, view)
+  view = view or w.view
+  tab_by_view[view].active = false
+  tabtree.emit_signal("changed")
+  w:close_tab(view)
+end
+
+function _M.archive_tab(w, view)
+  view = view or w.view
+  w:close_tab(view)
+end
+
+return _M
