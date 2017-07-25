@@ -10,6 +10,8 @@ local webview = require("webview")
 local modes = require("modes")
 local new_mode, get_mode = modes.new_mode, modes.get_mode
 
+local next_uid = 1
+
 -- Add binds to a mode
 local function add_binds(mode, binds, before)
   assert(binds and type(binds) == "table", "invalid binds table type: " .. type(binds))
@@ -45,8 +47,10 @@ function init_webview(view)
   local tab = {
     title = view.title or view.uri or "??",
     active = true,
-    view = view
+    view = view,
+    uid = next_uid
   }
+  next_uid = next_uid + 1
   tab_by_view[view] = tab
   table.insert(tabtree, tab)
   view:add_signal(
@@ -90,12 +94,14 @@ export_funcs = {
   log = function (_, s)
     print("TABOUTLINER JS: " .. s)
   end,
-  getData = function (_, s)
+  getData = function (view, s)
     local tabs = {}
     for _, tab in ipairs(tabtree) do
-      table.insert(tabs, { title = tab.title, active = tab.active })
+      table.insert(tabs, { title = tab.title, active = tab.active, uid = tab.uid })
     end
-    return tabs
+    return {
+      tabs = tabs
+    }
   end
 }
 
@@ -148,7 +154,13 @@ add_binds(
   {
     key({}, "Escape", "No escape!", function (w)
         print("You won't escape me!")
-    end)
+    end),
+    key({}, "e", "Select previous", function (w)
+        w.view:eval_js("previous()", {})
+    end),
+    key({}, "n", "Select next", function (w)
+        w.view:eval_js("next()", {})
+    end),
 })
 
 function open_taboutliner_window(w)

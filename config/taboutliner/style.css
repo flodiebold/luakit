@@ -6,10 +6,18 @@ ul.tabs {
 
 li.tab {
     margin-left: 5px;
+    padding-left: 5px;
+    width: 100%;
+    border-left: 2px solid rgba(0,0,0,0);
 }
 
 li.tab.inactive {
     color: #586e75;
+}
+
+li.tab.selected {
+    background-color: #073642;
+    border-left: 2px solid #b58900;
 }
 
 body {
