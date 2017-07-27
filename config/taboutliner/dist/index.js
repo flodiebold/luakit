@@ -30,40 +30,32 @@ window.update = function () {
     getData().then(render).catch(err => console.error(err));
 };
 
-window.next = function () {
-    getData().then(data => {
-        let currentIndex = null;
-        for (let i = 0; i < data.tabs.length; ++i) {
-            if (data.tabs[i].uid === state.selected) {
-                currentIndex = i;
-                break;
-            }
-        }
-        console.log("current index", currentIndex);
-        let nextIndex = currentIndex === null || currentIndex === data.tabs.length - 1 ? 0 : currentIndex + 1;
-        console.log("next index", nextIndex);
-        if (nextIndex < data.tabs.length) {
-            console.log(data.tabs[nextIndex]);
-            state.selected = data.tabs[nextIndex].uid;
-            render(data);
-        }
-    }).catch(err => console.error(err));
-};
+function command(name, handler) {
+    window[name] = function () {
+        getData().then(handler).catch(err => {
+            log(`An error occurred in command ${name}: ${err}`);
+            console.error(err);
+        });
+    };
+}
 
-window.previous = function () {
-    getData().then(data => {
-        let currentIndex = null;
-        for (let i = 0; i < data.tabs.length; ++i) {
-            if (data.tabs[i].uid === state.selected) {
-                currentIndex = i;
-            }
-        }
-        let previousIndex = currentIndex === null || currentIndex === 0 ? data.tabs.length - 1 : currentIndex - 1;
-        if (previousIndex >= 0) {
-            state.selected = data.tabs[previousIndex].uid;
-            render(data);
-        }
-    }).catch(err => console.error(err));
-};
+command("next", data => {
+    let currentIndex = _.findIndex(data.tabs, tab => tab.uid === state.selected);
+    let nextIndex = currentIndex === -1 || currentIndex === data.tabs.length - 1 ? 0 : currentIndex + 1;
+    if (nextIndex < data.tabs.length) {
+        console.log(data.tabs[nextIndex]);
+        state.selected = data.tabs[nextIndex].uid;
+        render(data);
+    }
+});
+
+command("previous", data => {
+    let currentIndex = _.findIndex(data.tabs, tab => tab.uid === state.selected);
+    let previousIndex = currentIndex === -1 || currentIndex === 0 ? data.tabs.length - 1 : currentIndex - 1;
+    if (previousIndex >= 0) {
+        state.selected = data.tabs[previousIndex].uid;
+        render(data);
+    }
+});
 
 update();

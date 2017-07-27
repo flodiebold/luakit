@@ -2,8 +2,6 @@
 local lousy = require("lousy")
 local chrome = require("chrome")
 
-local key, buf, but = lousy.bind.key, lousy.bind.buf, lousy.bind.but
-
 local window = require("window")
 local webview = require("webview")
 
@@ -149,6 +147,8 @@ new_mode(
     reset_on_navigation = false,
 })
 
+local key, buf, but, any = lousy.bind.key, lousy.bind.buf, lousy.bind.but, lousy.bind.any
+
 add_binds(
   "taboutliner",
   {
@@ -161,6 +161,9 @@ add_binds(
     key({}, "n", "Select next", function (w)
         w.view:eval_js("next()", {})
     end),
+    key({}, "Return", "Focus or open tab", function (w)
+        w.view:eval_js("activate()", {})
+    end)
 })
 
 function open_taboutliner_window(w)
