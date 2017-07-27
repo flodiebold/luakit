@@ -39,17 +39,18 @@ lousy.signal.setup(tabtree, true)
 local _M = {}
 
 local tab_by_view = setmetatable({}, { __mode = "k" })
+local tab_by_uid = setmetatable({}, { __mode = "v" })
 
 -- keep track of new tabs
 function init_webview(view)
   local tab = {
     title = view.title or view.uri or "??",
-    active = true,
     view = view,
     uid = next_uid
   }
   next_uid = next_uid + 1
   tab_by_view[view] = tab
+  tab_by_uid[tab.uid] = tab
   table.insert(tabtree, tab)
   view:add_signal(
     "property::title", function (v)
@@ -74,7 +75,7 @@ end
 
 function on_tab_close(w, view)
   local tab = tab_by_view[view]
-  if tab.active then
+  if tab.view then
     archive_tab(tab)
   end
 end
@@ -87,6 +88,27 @@ end)
 chrome_name = "taboutliner"
 chrome_uri = string.format("luakit://%s", chrome_name)
 
+function focus_or_activate_uid(uid)
+  local tab = tab_by_uid[uid]
+  if tab.view then
+    local w = webview.window(tab.view)
+    local tabindex = nil
+    for i, some_view in ipairs(w.tabs.children) do
+      if some_view == tab.view then
+        tabindex = i
+      end
+    end
+    if tabindex then
+      w.tabs:switch(tabindex)
+    end
+    -- make the window focus
+    w.win.screen = w.win.screen
+    w.win.urgency_hint = true
+  else
+    print("activate", uid)
+  end
+end
+
 -- Functions that are also callable from javascript go here.
 export_funcs = {
   log = function (_, s)
@@ -95,7 +117,7 @@ export_funcs = {
   getData = function (view, s)
     local tabs = {}
     for _, tab in ipairs(tabtree) do
-      table.insert(tabs, { title = tab.title, active = tab.active, uid = tab.uid })
+      table.insert(tabs, { title = tab.title, active = (tab.view ~= nil), uid = tab.uid })
     end
     return {
       tabs = tabs
@@ -156,13 +178,13 @@ add_binds(
         print("You won't escape me!")
     end),
     key({}, "e", "Select previous", function (w)
-        w.view:eval_js("previous()", {})
+        w.view:eval_js("previous()", { no_return = true })
     end),
     key({}, "n", "Select next", function (w)
-        w.view:eval_js("next()", {})
+        w.view:eval_js("next()", { no_return = true })
     end),
     key({}, "Return", "Focus or open tab", function (w)
-        w.view:eval_js("activate()", {})
+        w.view:eval_js("getSelected()", { callback = focus_or_activate_uid })
     end)
 })
 
@@ -179,7 +201,7 @@ add_cmds({
 
 function _M.deactivate_tab(w, view)
   view = view or w.view
-  tab_by_view[view].active = false
+  tab_by_view[view].view = nil
   tabtree.emit_signal("changed")
   w:close_tab(view)
 end

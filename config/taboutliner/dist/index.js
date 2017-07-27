@@ -58,4 +58,8 @@ command("previous", data => {
     }
 });
 
+window.getSelected = function () {
+    return state.selected;
+};
+
 update();
