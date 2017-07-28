@@ -40,18 +40,27 @@ local _M = {}
 
 local tab_by_view = setmetatable({}, { __mode = "k" })
 local tab_by_uid = setmetatable({}, { __mode = "v" })
+local tab_being_created = nil
 
 -- keep track of new tabs
 function init_webview(view)
-  local tab = {
-    title = view.title or view.uri or "??",
-    view = view,
-    uid = next_uid
-  }
-  next_uid = next_uid + 1
+  local tab = nil
+  if tab_being_created then
+    tab = tab_being_created
+    tab.view = view
+    tab_being_created = nil
+  else
+    tab = {
+      title = view.title or view.uri or "??",
+      uri = view.uri,
+      view = view,
+      uid = next_uid
+    }
+    next_uid = next_uid + 1
+    tab_by_uid[tab.uid] = tab
+    table.insert(tabtree, tab)
+  end
   tab_by_view[view] = tab
-  tab_by_uid[tab.uid] = tab
-  table.insert(tabtree, tab)
   view:add_signal(
     "property::title", function (v)
       local oldtitle = tab.title
@@ -66,6 +75,17 @@ function init_webview(view)
       print("title changed from", oldtitle, "to", tab.title)
       tabtree.emit_signal("changed")
   end)
+  view:add_signal(
+    "property::uri", function (v)
+      local olduri = v.uri
+      tab.uri = v.uri
+      if olduri == tab.uri then
+        return
+      end
+      print("uri changed from", olduri, "to", tab.uri)
+      tabtree.emit_signal("changed")
+  end)
+  tabtree.emit_signal("changed")
 end
 webview.add_signal("init", init_webview)
 
@@ -105,7 +125,30 @@ function focus_or_activate_uid(uid)
     w.win.screen = w.win.screen
     w.win.urgency_hint = true
   else
-    print("activate", uid)
+    -- find window to put it in (TODO)
+    local w = nil
+    for _, some_window in pairs(window.bywidget) do
+      if #some_window.tabs.children > 1 or some_window.tabs[1].uri ~= "luakit://taboutliner" then
+        w = some_window
+      end
+    end
+    if not w then
+      -- TODO: create window if we don't find one
+      print("TODO")
+      return
+    end
+
+    -- let the webview init handler know this is supposed to be that tab
+    tab_being_created = tab
+    local view = webview.new({ private = false })
+    -- TODO: find the right place to put the tab
+    w:attach_tab(view, true, function (ww)
+                   return #ww.tabs.children + 1
+    end)
+    -- TODO: session state
+    webview.set_location(view, { uri = tab.uri })
+    w.win.screen = w.win.screen
+    w.win.urgency_hint = true
   end
 end
 
