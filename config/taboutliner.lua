@@ -1,9 +1,11 @@
 
 local lousy = require("lousy")
+local pickle = lousy.pickle
 local chrome = require("chrome")
 
 local window = require("window")
 local webview = require("webview")
+local session = require("session")
 
 local modes = require("modes")
 local new_mode, get_mode = modes.new_mode, modes.get_mode
@@ -41,6 +43,95 @@ local _M = {}
 local tab_by_view = setmetatable({}, { __mode = "k" })
 local tab_by_uid = setmetatable({}, { __mode = "v" })
 local tab_being_created = nil
+
+-- i/o
+tabs_file = luakit.data_dir .. "/tabs"
+
+local function rm(file)
+  luakit.spawn(string.format("rm %q", file))
+end
+
+function save()
+  local tabs = {}
+  for i, tab in ipairs(tabtree) do
+    tabs[i] = {
+      uid = tab.uid,
+      title = tab.title,
+      uri = tab.uri
+    }
+  end
+
+  if #tabs > 0 then
+    local fh = io.open(tabs_file, "wb")
+    fh:write(pickle.pickle(tabs))
+    io.close(fh)
+  else
+    rm(tabs_file)
+  end
+  print("Tabtree saved.")
+end
+
+function load()
+  if not os.exists(tabs_file) then return end
+  local fh = io.open(tabs_file, "rb")
+  local tabs = pickle.unpickle(fh:read("*all"))
+  io.close(fh)
+  for _, tab in ipairs(tabs) do
+    table.insert(tabtree, tab)
+    tab_by_uid[tab.uid] = tab
+    tab.view = nil
+    if tab.uid >= next_uid then
+      next_uid = tab.uid + 1
+    end
+  end
+end
+
+session.add_signal(
+  "save", function (state)
+    save()
+    for w, data in pairs(state) do
+      for ti, view in pairs(w.tabs.children) do
+        local tab = tab_by_view[view]
+        if tab then
+          assert(data.open[ti].ti == ti)
+          data.open[ti].tab_uid = tab.uid
+          print("saving known tab:", view.title, tab.uid)
+        else
+          print("Unknown tab!", view.title, view.uri)
+        end
+      end
+    end
+end)
+
+session.add_signal(
+  "restore", function (state)
+    load()
+
+    for w, data in pairs(state) do
+      for ti, view in pairs(w.tabs.children) do
+        local uid = data.open[ti].tab_uid
+        if uid == nil then
+          print("Tab not known in tabtree!", view.uri)
+          init_webview(view)
+        else
+          local tab = tab_by_uid[uid]
+          if tab then
+            print("Loading known tab:", uid, view.uri, "is", tab.title)
+            tab.view = view
+            tab_by_view[view] = tab
+          else
+            print("Tab uid not found:", uid)
+            init_webview(view)
+          end
+        end
+      end
+    end
+
+    tabtree.emit_signal("changed")
+
+    -- now listen for new tabs
+    webview.add_signal("init", init_webview)
+end)
 
 -- keep track of new tabs
 function init_webview(view)
@@ -87,7 +178,6 @@ function init_webview(view)
   end)
   tabtree.emit_signal("changed")
 end
-webview.add_signal("init", init_webview)
 
 function archive_tab(tab)
   print("archive tab", tab.title)

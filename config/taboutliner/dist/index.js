@@ -21,12 +21,10 @@ function TabList(props) {
 }
 
 function render(data) {
-    log("render", state.selected);
     Inferno.render(createVNode(2, "div", null, createVNode(16, TabList, null, null, _extends({}, data))), document.getElementById("output"));
 };
 
 window.update = function () {
-    log("update");
     getData().then(render).catch(err => console.error(err));
 };
 

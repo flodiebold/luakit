@@ -22,7 +22,6 @@ function TabList(props) {
 }
 
 function render(data) {
-    log("render", state.selected);
     Inferno.render(
         <div>
           <TabList {...data} />
@@ -32,7 +31,6 @@ function render(data) {
 };
 
 window.update = function() {
-    log("update")
     getData().then(render).catch(err => console.error(err));
 };
 
