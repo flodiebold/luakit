@@ -13,47 +13,94 @@ function Tab(props) {
     if (props.uid === state.selected) {
         className += " selected";
     }
-    return createVNode(2, "li", className, props.title);
+    if (props.subtree && props.subtree.length > 0) console.log("tab has subtree:", props);
+    return createVNode(2, "li", "tab-subtree", [createVNode(2, "div", className, props.title), props.subtree && props.subtree.length > 0 && createVNode(16, TabList, null, null, {
+        "tabs": props.subtree
+    })]);
 }
 
 function TabList(props) {
-    return createVNode(2, "ul", "tabs", props.tabs.map(tab => createVNode(16, Tab, null, null, _extends({}, tab))));
+    return createVNode(2, "ul", "tabs", props.tabs.map(tab => createVNode(16, Tab, null, null, _extends({}, tab, {
+        "subtree": tab.children
+    }))));
 }
 
 function render(data) {
     Inferno.render(createVNode(2, "div", null, createVNode(16, TabList, null, null, _extends({}, data))), document.getElementById("output"));
 };
 
+function selectDefault(data) {
+    if (state.selected === null) {
+        const first = visibleTabs(data.tabs).next().value;
+        if (first) {
+            console.log("first", first);
+            state.selected = first.uid;
+        }
+    }
+    return data;
+}
+
 window.update = function () {
-    getData().then(render).catch(err => console.error(err));
+    getData().then(selectDefault).then(render).catch(err => console.error(err));
 };
 
 function command(name, handler) {
-    window[name] = function () {
-        getData().then(handler).catch(err => {
+    window[name] = function (...args) {
+        getData().then(data => handler(data, ...args)).catch(err => {
             log(`An error occurred in command ${name}: ${err}`);
             console.error(err);
         });
     };
 }
 
-command("next", data => {
-    let currentIndex = _.findIndex(data.tabs, tab => tab.uid === state.selected);
-    let nextIndex = currentIndex === -1 || currentIndex === data.tabs.length - 1 ? 0 : currentIndex + 1;
-    if (nextIndex < data.tabs.length) {
-        console.log(data.tabs[nextIndex]);
-        state.selected = data.tabs[nextIndex].uid;
-        render(data);
+function* visibleTabs(tabs) {
+    for (let tab of tabs) {
+        console.log("visible tab:", tab);
+        yield tab;
+        if (tab.children && tab.children.length > 0) {
+            yield* visibleTabs(tab.children);
+        }
     }
+}
+
+command("next", (data, count = 1) => {
+    let currentFound = false;
+    let last = null;
+    for (let tab of visibleTabs(data.tabs)) {
+        if (currentFound && count <= 1) {
+            state.selected = tab.uid;
+            break;
+        } else if (currentFound) {
+            count--;
+        } else {
+            currentFound = tab.uid === state.selected;
+        }
+        last = tab;
+    }
+    if (count > 1 && last !== null) {
+        state.selected = last.uid;
+    }
+    render(data);
 });
 
-command("previous", data => {
-    let currentIndex = _.findIndex(data.tabs, tab => tab.uid === state.selected);
-    let previousIndex = currentIndex === -1 || currentIndex === 0 ? data.tabs.length - 1 : currentIndex - 1;
-    if (previousIndex >= 0) {
-        state.selected = data.tabs[previousIndex].uid;
-        render(data);
+command("previous", (data, count = 1) => {
+    const recent = [];
+    for (let tab of visibleTabs(data.tabs)) {
+        recent.unshift(tab);
+        if (tab.uid === state.selected) {
+            let target;
+            if (recent.length > count) {
+                target = recent[count];
+            } else {
+                target = recent[recent.length - 1];
+            }
+            if (target) {
+                state.selected = target.uid;
+            }
+            break;
+        }
     }
+    render(data);
 });
 
 window.getSelected = function () {

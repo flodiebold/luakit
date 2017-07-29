@@ -10,8 +10,9 @@ local session = require("session")
 local modes = require("modes")
 local new_mode, get_mode = modes.new_mode, modes.get_mode
 
-local next_uid = 1
+local taborder = require("taborder")
 
+-- TODO move these somewhere else (factor out with binds.lua)
 -- Add binds to a mode
 local function add_binds(mode, binds, before)
   assert(binds and type(binds) == "table", "invalid binds table type: " .. type(binds))
@@ -34,6 +35,8 @@ local function add_cmds(cmds, before)
   add_binds("command", cmds, before)
 end
 
+
+local next_uid = 1
 local tabtree = {}
 
 lousy.signal.setup(tabtree, true)
@@ -42,7 +45,7 @@ local _M = {}
 
 local tab_by_view = setmetatable({}, { __mode = "k" })
 local tab_by_uid = setmetatable({}, { __mode = "v" })
-local tab_being_created = nil
+local tab_already_created = nil
 
 -- i/o
 tabs_file = luakit.data_dir .. "/tabs"
@@ -51,15 +54,21 @@ local function rm(file)
   luakit.spawn(string.format("rm %q", file))
 end
 
-function save()
-  local tabs = {}
-  for i, tab in ipairs(tabtree) do
-    tabs[i] = {
+function save_tab_list(tabs)
+  local saved_tabs = {}
+  for i, tab in ipairs(tabs) do
+    saved_tabs[i] = {
       uid = tab.uid,
       title = tab.title,
-      uri = tab.uri
+      uri = tab.uri,
+      children = save_tab_list(tab.children)
     }
   end
+  return saved_tabs
+end
+
+function save()
+  local tabs = save_tab_list(tabtree)
 
   if #tabs > 0 then
     local fh = io.open(tabs_file, "wb")
@@ -71,18 +80,30 @@ function save()
   print("Tabtree saved.")
 end
 
+function restore_tab_list(tabs, parent)
+  for _, tab in ipairs(tabs) do
+    tab_by_uid[tab.uid] = tab
+    tab.view = nil
+    tab.parent = parent
+    if tab.uid >= next_uid then
+      next_uid = tab.uid + 1
+    end
+    if tab.children then
+      restore_tab_list(tab.children, tab)
+    else
+      tab.children = {}
+    end
+  end
+end
+
 function load()
   if not os.exists(tabs_file) then return end
   local fh = io.open(tabs_file, "rb")
   local tabs = pickle.unpickle(fh:read("*all"))
   io.close(fh)
+  restore_tab_list(tabs)
   for _, tab in ipairs(tabs) do
     table.insert(tabtree, tab)
-    tab_by_uid[tab.uid] = tab
-    tab.view = nil
-    if tab.uid >= next_uid then
-      next_uid = tab.uid + 1
-    end
   end
 end
 
@@ -113,6 +134,7 @@ session.add_signal(
         if uid == nil then
           print("Tab not known in tabtree!", view.uri)
           init_webview(view)
+          table.insert(tabtree, tab_by_view[view])
         else
           local tab = tab_by_uid[uid]
           if tab then
@@ -122,6 +144,7 @@ session.add_signal(
           else
             print("Tab uid not found:", uid)
             init_webview(view)
+            table.insert(tabtree, tab_by_view[view])
           end
         end
       end
@@ -134,24 +157,36 @@ session.add_signal(
 end)
 
 -- keep track of new tabs
+function create_tab(view)
+  local tab = {
+    title = view.title or view.uri or "??",
+    uri = view.uri,
+    view = view,
+    uid = next_uid,
+    parent = nil,
+    children = {}
+  }
+  next_uid = next_uid + 1
+  tab_by_uid[tab.uid] = tab
+  return tab
+end
+
 function init_webview(view)
   local tab = nil
-  if tab_being_created then
-    tab = tab_being_created
+  if tab_already_created then
+    tab = tab_already_created
     tab.view = view
-    tab_being_created = nil
   else
-    tab = {
-      title = view.title or view.uri or "??",
-      uri = view.uri,
-      view = view,
-      uid = next_uid
-    }
-    next_uid = next_uid + 1
-    tab_by_uid[tab.uid] = tab
-    table.insert(tabtree, tab)
+    tab = create_tab(view)
   end
+
   tab_by_view[view] = tab
+
+  if tab_already_created then
+    tab_already_created = nil
+    tabtree.emit_signal("changed")
+  end
+
   view:add_signal(
     "property::title", function (v)
       local oldtitle = tab.title
@@ -176,8 +211,53 @@ function init_webview(view)
       print("uri changed from", olduri, "to", tab.uri)
       tabtree.emit_signal("changed")
   end)
-  tabtree.emit_signal("changed")
 end
+
+-- TODO mounting into the tabtree should happen here instead of above:
+
+function _M.taborder_next_sibling (w, newview)
+  -- TODO - should open after all children of the current tab, as a sibling
+  print("taborder_next_sibling", w, newview)
+  local current_tab = tab_by_view[w.view]
+  local new_tab = tab_by_view[newview]
+  if not current_tab or not new_tab then
+    print("unknown tab!")
+    return taborder.last(w, newview)
+  end
+
+  new_tab.parent = current_tab.parent
+  if new_tab.parent then
+    table.insert(new_tab.parent.children, new_tab)
+  else
+    table.insert(tabtree, new_tab)
+  end
+
+  tabtree.emit_signal("changed")
+
+  return taborder.last(w, newview)
+end
+
+function _M.taborder_below (w, newview)
+  -- TODO - should open below the current tab, as last child
+  print("taborder_below", w, newview)
+  local current_tab = tab_by_view[w.view]
+  local new_tab = tab_by_view[newview]
+  if not current_tab or not new_tab then
+    print("unknown tab!")
+    return taborder.last(w, newview)
+  end
+
+  new_tab.parent = current_tab
+  table.insert(current_tab.children, new_tab)
+
+  tabtree.emit_signal("changed")
+
+  -- TODO find right position
+  return taborder.last(w, newview)
+end
+
+taborder.default = _M.taborder_next_sibling
+taborder.default_bg = _M.taborder_below
 
 function archive_tab(tab)
   print("archive tab", tab.title)
@@ -229,7 +309,7 @@ function focus_or_activate_uid(uid)
     end
 
     -- let the webview init handler know this is supposed to be that tab
-    tab_being_created = tab
+    tab_already_created = tab
     local view = webview.new({ private = false })
     -- TODO: find the right place to put the tab
     w:attach_tab(view, true, function (ww)
@@ -242,18 +322,29 @@ function focus_or_activate_uid(uid)
   end
 end
 
+function build_tree_for_js(tabs)
+  local js_tabs = {}
+  for _, tab in ipairs(tabs) do
+    local js_tab = {
+      title = tab.title,
+      uri = tab.uri,
+      active = (tab.view ~= nil),
+      uid = tab.uid,
+      children = build_tree_for_js(tab.children)
+    }
+    table.insert(js_tabs, js_tab)
+  end
+  return js_tabs
+end
+
 -- Functions that are also callable from javascript go here.
 export_funcs = {
   log = function (_, s)
     print("TABOUTLINER JS: " .. s)
   end,
   getData = function (view, s)
-    local tabs = {}
-    for _, tab in ipairs(tabtree) do
-      table.insert(tabs, { title = tab.title, active = (tab.view ~= nil), uid = tab.uid })
-    end
     return {
-      tabs = tabs
+      tabs = build_tree_for_js(tabtree)
     }
   end
 }
