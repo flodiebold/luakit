@@ -16,14 +16,18 @@ function Tab(props) {
           <div className={className}>
             {props.title}
           </div>
-          {props.subtree && props.subtree.length > 0 && <TabList tabs={props.subtree} />}
+          {props.subtree && props.subtree.length > 0 && <TabList subtree={true} tabs={props.subtree} />}
         </li>
     );
 }
 
 function TabList(props) {
+    let className = "tabs ";
+    if (props.subtree) {
+        className += "subtree";
+    }
     return (
-        <ul className="tabs">
+        <ul className={className}>
           {props.tabs.map(tab => <Tab {...tab} subtree={tab.children} />)}
         </ul>
     );

@@ -250,6 +250,8 @@ function _M.taborder_below (w, newview)
   new_tab.parent = current_tab
   table.insert(current_tab.children, new_tab)
 
+
+
   tabtree.emit_signal("changed")
 
   -- TODO find right position

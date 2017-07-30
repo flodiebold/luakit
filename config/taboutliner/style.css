@@ -1,7 +1,11 @@
-ul.tabs {
+.tabs {
     list-style-type: none;
     padding-left: 5px;
     margin: 0;
+}
+
+.tabs.subtree {
+    padding-left: 15px;
 }
 
 .tab {

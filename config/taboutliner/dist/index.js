@@ -15,12 +15,17 @@ function Tab(props) {
     }
     if (props.subtree && props.subtree.length > 0) console.log("tab has subtree:", props);
     return createVNode(2, "li", "tab-subtree", [createVNode(2, "div", className, props.title), props.subtree && props.subtree.length > 0 && createVNode(16, TabList, null, null, {
+        "subtree": true,
         "tabs": props.subtree
     })]);
 }
 
 function TabList(props) {
-    return createVNode(2, "ul", "tabs", props.tabs.map(tab => createVNode(16, Tab, null, null, _extends({}, tab, {
+    let className = "tabs ";
+    if (props.subtree) {
+        className += "subtree";
+    }
+    return createVNode(2, "ul", className, props.tabs.map(tab => createVNode(16, Tab, null, null, _extends({}, tab, {
         "subtree": tab.children
     }))));
 }
