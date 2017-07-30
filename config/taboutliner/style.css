@@ -24,6 +24,11 @@
     border-left: 2px solid #b58900;
 }
 
+.tab .ellipsis {
+    margin-left: 1em;
+    color: #586e75;
+}
+
 body {
     background-color: #002b36;
     color: #839496;

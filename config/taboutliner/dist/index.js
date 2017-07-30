@@ -1,7 +1,8 @@
 var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
 
 const state = {
-    selected: null
+    selected: null,
+    collapsed: new Set()
 };
 
 var createVNode = Inferno.createVNode;
@@ -13,8 +14,8 @@ function Tab(props) {
     if (props.uid === state.selected) {
         className += " selected";
     }
-    if (props.subtree && props.subtree.length > 0) console.log("tab has subtree:", props);
-    return createVNode(2, "li", "tab-subtree", [createVNode(2, "div", className, props.title), props.subtree && props.subtree.length > 0 && createVNode(16, TabList, null, null, {
+    const hasSubtree = props.subtree && props.subtree.length > 0;
+    return createVNode(2, "li", "tab-subtree", [createVNode(2, "div", className, [props.title, hasSubtree && props.collapsed && createVNode(2, "span", "ellipsis", "(...)")]), hasSubtree && !props.collapsed && createVNode(16, TabList, null, null, {
         "subtree": true,
         "tabs": props.subtree
     })]);
@@ -38,7 +39,6 @@ function selectDefault(data) {
     if (state.selected === null) {
         const first = visibleTabs(data.tabs).next().value;
         if (first) {
-            console.log("first", first);
             state.selected = first.uid;
         }
     }
@@ -52,7 +52,7 @@ window.update = function () {
 function command(name, handler) {
     window[name] = function (...args) {
         getData().then(data => handler(data, ...args)).catch(err => {
-            log(`An error occurred in command ${name}: ${err}`);
+            print(`An error occurred in command ${name}: ${err}`);
             console.error(err);
         });
     };
@@ -60,9 +60,8 @@ function command(name, handler) {
 
 function* visibleTabs(tabs) {
     for (let tab of tabs) {
-        console.log("visible tab:", tab);
         yield tab;
-        if (tab.children && tab.children.length > 0) {
+        if (tab.children && tab.children.length > 0 && !tab.collapsed) {
             yield* visibleTabs(tab.children);
         }
     }

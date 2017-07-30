@@ -1,5 +1,6 @@
 const state = {
-    selected: null
+    selected: null,
+    collapsed: new Set()
 };
 
 function Tab(props) {
@@ -10,13 +11,14 @@ function Tab(props) {
     if (props.uid === state.selected) {
         className += " selected";
     }
-    if (props.subtree && props.subtree.length > 0) console.log("tab has subtree:", props);
+    const hasSubtree = props.subtree && props.subtree.length > 0;
     return (
         <li className="tab-subtree">
           <div className={className}>
             {props.title}
+            {hasSubtree && props.collapsed && <span className="ellipsis">(...)</span>}
           </div>
-          {props.subtree && props.subtree.length > 0 && <TabList subtree={true} tabs={props.subtree} />}
+          {hasSubtree && !props.collapsed && <TabList subtree={true} tabs={props.subtree} />}
         </li>
     );
 }
@@ -46,7 +48,6 @@ function selectDefault(data) {
     if (state.selected === null) {
         const first = visibleTabs(data.tabs).next().value;
         if (first) {
-            console.log("first", first);
             state.selected = first.uid;
         }
     }
@@ -60,7 +61,7 @@ window.update = function() {
 function command(name, handler) {
     window[name] = function(...args) {
         getData().then(data => handler(data, ...args)).catch(err => {
-            log(`An error occurred in command ${name}: ${err}`);
+            print(`An error occurred in command ${name}: ${err}`);
             console.error(err);
         });
     }
@@ -68,9 +69,8 @@ function command(name, handler) {
 
 function* visibleTabs(tabs) {
     for (let tab of tabs) {
-        console.log("visible tab:", tab);
         yield tab;
-        if (tab.children && tab.children.length > 0) {
+        if (tab.children && tab.children.length > 0 && !tab.collapsed) {
             yield* visibleTabs(tab.children);
         }
     }

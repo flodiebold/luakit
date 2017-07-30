@@ -61,6 +61,7 @@ function save_tab_list(tabs)
       uid = tab.uid,
       title = tab.title,
       uri = tab.uri,
+      collapsed = tab.collapsed,
       children = save_tab_list(tab.children)
     }
   end
@@ -163,6 +164,7 @@ function create_tab(view)
     uri = view.uri,
     view = view,
     uid = next_uid,
+    collapsed = false,
     parent = nil,
     children = {}
   }
@@ -324,6 +326,12 @@ function focus_or_activate_uid(uid)
   end
 end
 
+function toggle_collapse(uid)
+  local tab = tab_by_uid[uid]
+  tab.collapsed = not tab.collapsed
+  tabtree.emit_signal("changed")
+end
+
 function build_tree_for_js(tabs)
   local js_tabs = {}
   for _, tab in ipairs(tabs) do
@@ -332,6 +340,7 @@ function build_tree_for_js(tabs)
       uri = tab.uri,
       active = (tab.view ~= nil),
       uid = tab.uid,
+      collapsed = tab.collapsed == true,
       children = build_tree_for_js(tab.children)
     }
     table.insert(js_tabs, js_tab)
@@ -341,7 +350,7 @@ end
 
 -- Functions that are also callable from javascript go here.
 export_funcs = {
-  log = function (_, s)
+  print = function (_, s)
     print("TABOUTLINER JS: " .. s)
   end,
   getData = function (view, s)
@@ -408,6 +417,9 @@ add_binds(
     end),
     key({}, "n", "Select next", function (w)
         w.view:eval_js("next()", { no_return = true })
+    end),
+    key({}, "Tab", "Collapse/uncollapse", function (w)
+        w.view:eval_js("getSelected()", { callback = toggle_collapse })
     end),
     key({}, "Return", "Focus or open tab", function (w)
         w.view:eval_js("getSelected()", { callback = focus_or_activate_uid })
