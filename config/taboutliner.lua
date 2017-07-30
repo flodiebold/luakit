@@ -2,6 +2,7 @@
 local lousy = require("lousy")
 local pickle = lousy.pickle
 local chrome = require("chrome")
+local json = require("json")
 
 local window = require("window")
 local webview = require("webview")
@@ -62,6 +63,8 @@ function save_tab_list(tabs)
       title = tab.title,
       uri = tab.uri,
       collapsed = tab.collapsed,
+      typ = tab.typ,
+      favicon = tab.favicon,
       children = save_tab_list(tab.children)
     }
   end
@@ -73,7 +76,8 @@ function save()
 
   if #tabs > 0 then
     local fh = io.open(tabs_file, "wb")
-    fh:write(pickle.pickle(tabs))
+    fh = io.open(tabs_file .. ".json", "wb")
+    fh:write(json.encode(tabs))
     io.close(fh)
   else
     rm(tabs_file)
@@ -99,8 +103,8 @@ end
 
 function load()
   if not os.exists(tabs_file) then return end
-  local fh = io.open(tabs_file, "rb")
-  local tabs = pickle.unpickle(fh:read("*all"))
+  local fh = io.open(tabs_file .. ".json", "rb")
+  local tabs = json.decode(fh:read("*all"))
   io.close(fh)
   restore_tab_list(tabs)
   for _, tab in ipairs(tabs) do
@@ -157,9 +161,32 @@ session.add_signal(
     webview.add_signal("init", init_webview)
 end)
 
+-- json import
+function trim(s)
+  return (s:gsub("^%s*(.-)%s*$", "%1"))
+end
+
+function import(file)
+  print("import '" .. file .. "'")
+  if not os.exists(file) then
+    print("doesn't exist")
+    return
+  end
+  local fh = io.open(file, "r")
+  local data_json = fh:read("*all");
+  io.close(fh)
+  local tabs = json.decode(data_json)
+  restore_tab_list(tabs)
+  for _, tab in ipairs(tabs) do
+    table.insert(tabtree, tab)
+  end
+  tabtree.emit_signal("changed")
+end
+
 -- keep track of new tabs
 function create_tab(view)
   local tab = {
+    typ = "tab",
     title = view.title or view.uri or "??",
     uri = view.uri,
     view = view,
@@ -284,6 +311,9 @@ chrome_uri = string.format("luakit://%s", chrome_name)
 
 function focus_or_activate_uid(uid)
   local tab = tab_by_uid[uid]
+  if tab.typ ~= "tab" then
+    return
+  end
   if tab.view then
     local w = webview.window(tab.view)
     local tabindex = nil
@@ -435,6 +465,9 @@ end
 local cmd = lousy.bind.cmd
 add_cmds({
     cmd("taboutliner", "Open taboutliner window", open_taboutliner_window),
+    cmd("taboutliner_import", "Import taboutliner tree from json", function (w, a)
+          import(trim(a))
+    end)
 })
 
 function _M.deactivate_tab(w, view)
