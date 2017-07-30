@@ -8,13 +8,25 @@ function Tab(props) {
     if (!props.active) {
         className += " inactive";
     }
+    let ref;
     if (props.uid === state.selected) {
         className += " selected";
+        ref = (elem) => {
+            // make sure the element is scrolled into view
+            if (elem) {
+                const rect = elem.getBoundingClientRect();
+                if (rect.top < 0) {
+                    elem.scrollIntoView(true);
+                } else if (rect.bottom > window.innerHeight) {
+                    elem.scrollIntoView(false);
+                }
+            }
+        }
     }
     const hasSubtree = props.subtree && props.subtree.length > 0;
     return (
         <li className="tab-subtree">
-          <div className={className}>
+          <div className={className} ref={ref}>
             {props.title}
             {hasSubtree && props.collapsed && <span className="ellipsis">(...)</span>}
           </div>

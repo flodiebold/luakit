@@ -11,11 +11,23 @@ function Tab(props) {
     if (!props.active) {
         className += " inactive";
     }
+    let ref;
     if (props.uid === state.selected) {
         className += " selected";
+        ref = elem => {
+            // make sure the element is scrolled into view
+            if (elem) {
+                const rect = elem.getBoundingClientRect();
+                if (rect.top < 0) {
+                    elem.scrollIntoView(true);
+                } else if (rect.bottom > window.innerHeight) {
+                    elem.scrollIntoView(false);
+                }
+            }
+        };
     }
     const hasSubtree = props.subtree && props.subtree.length > 0;
-    return createVNode(2, "li", "tab-subtree", [createVNode(2, "div", className, [props.title, hasSubtree && props.collapsed && createVNode(2, "span", "ellipsis", "(...)")]), hasSubtree && !props.collapsed && createVNode(16, TabList, null, null, {
+    return createVNode(2, "li", "tab-subtree", [createVNode(2, "div", className, [props.title, hasSubtree && props.collapsed && createVNode(2, "span", "ellipsis", "(...)")], null, null, ref), hasSubtree && !props.collapsed && createVNode(16, TabList, null, null, {
         "subtree": true,
         "tabs": props.subtree
     })]);

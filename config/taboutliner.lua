@@ -93,6 +93,9 @@ function restore_tab_list(tabs, parent)
     if tab.uid >= next_uid then
       next_uid = tab.uid + 1
     end
+    if tab.typ == nil then
+      tab.typ = "tab"
+    end
     if tab.children then
       restore_tab_list(tab.children, tab)
     else
