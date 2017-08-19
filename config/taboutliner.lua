@@ -245,10 +245,42 @@ function init_webview(view)
   end)
 end
 
+function find_tab_index(w, new_tab, subtree_to_search)
+  local max_index = 0
+  local subtrees
+  if subtree_to_search then
+    if subtree_to_search == new_tab then
+      return nil, true
+    end
+    subtrees = subtree_to_search.children
+    local v = subtree_to_search.view
+    if v and webview.window(v) == w then
+      for i, vv in ipairs(w.tabs.children) do
+        if vv == v then
+          max_index = i
+          break
+        end
+      end
+    end
+  else
+    subtrees = tabtree
+  end
+  for i, subtree in ipairs(subtrees) do
+    index, found = find_tab_index(w, new_tab, subtree)
+    if index ~= nil and index > max_index then
+      max_index = index
+    end
+    if found then
+      return max_index, true
+    end
+  end
+  return max_index, false
+end
+
 -- TODO mounting into the tabtree should happen here instead of above:
 
 function _M.taborder_next_sibling (w, newview)
-  -- TODO - should open after all children of the current tab, as a sibling
+  -- should open after all children of the current tab, as a sibling
   print("taborder_next_sibling", w, newview)
   local current_tab = tab_by_view[w.view]
   local new_tab = tab_by_view[newview]
@@ -266,11 +298,12 @@ function _M.taborder_next_sibling (w, newview)
 
   tabtree.emit_signal("changed")
 
-  return taborder.last(w, newview)
+  local index, _ = find_tab_index(w, new_tab)
+  return index + 1
 end
 
 function _M.taborder_below (w, newview)
-  -- TODO - should open below the current tab, as last child
+  -- should open below the current tab, as last child
   print("taborder_below", w, newview)
   local current_tab = tab_by_view[w.view]
   local new_tab = tab_by_view[newview]
@@ -286,8 +319,8 @@ function _M.taborder_below (w, newview)
 
   tabtree.emit_signal("changed")
 
-  -- TODO find right position
-  return taborder.last(w, newview)
+  local index, _ = find_tab_index(w, new_tab)
+  return index + 1
 end
 
 taborder.default = _M.taborder_next_sibling
@@ -348,9 +381,9 @@ function focus_or_activate_uid(uid)
     -- let the webview init handler know this is supposed to be that tab
     tab_already_created = tab
     local view = webview.new({ private = false })
-    -- TODO: find the right place to put the tab
     w:attach_tab(view, true, function (ww)
-                   return #ww.tabs.children + 1
+                   local index, _ = find_tab_index(ww, tab)
+                   return index + 1
     end)
     -- TODO: session state
     webview.set_location(view, { uri = tab.uri })
