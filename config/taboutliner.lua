@@ -508,6 +508,12 @@ chrome.add(
   end, export_funcs
 )
 
+function scroll_taboutliner_win(w, scroll)
+  print("scroll view")
+  w:scroll(scroll)
+  w.view:eval_js("moveCursorIntoView()", { no_return = true })
+end
+
 new_mode(
   "taboutliner", "Mode for the taboutliner window", {
     enter = function (w)
@@ -527,9 +533,32 @@ new_mode(
 
 local key, buf, but, any = lousy.bind.key, lousy.bind.buf, lousy.bind.but, lousy.bind.any
 
+local globals = require("globals")
+local scroll_step = globals.scroll_step or 20
+local page_step = globals.page_step or 1.0
+
 add_binds(
   "taboutliner",
   {
+    -- Autoparse the `[count]` before a binding and re-call the hit function
+    -- with the count removed and added to the opts table.
+    any([[]],
+        function (w, m)
+            local count, buffer
+            if m.buffer then
+                count = string.match(m.buffer, "^(%d+)")
+            end
+            if count then
+                buffer = string.sub(m.buffer, #count + 1, (m.updated_buf and -2) or -1)
+                local opts = join(m, {count = tonumber(count)})
+                opts.buffer = (#buffer > 0 and buffer) or nil
+                if lousy.bind.hit(w, m.binds, m.mods, m.key, opts) then
+                    return true
+                end
+            end
+            return false
+    end),
+
     key({}, "Escape", "No escape!", function (w)
         print("You won't escape me!")
     end),
@@ -544,7 +573,36 @@ add_binds(
     end),
     key({}, "Return", "Focus or open tab", function (w)
         w.view:eval_js("getSelected()", { callback = focus_or_activate_uid })
-    end)
+    end),
+
+    -- standard commands (TODO implement a better way to do this)
+    key({"Control"}, "e", "Scroll document down.",
+      function (w) scroll_taboutliner_win(w, { yrel = scroll_step }) end),
+
+    key({"Control"}, "y", "Scroll document up.",
+      function (w) scroll_taboutliner_win(w, { yrel = -scroll_step }) end),
+
+    key({"Control"}, "d", "Scroll half page down.",
+      function (w) scroll_taboutliner_win(w, { ypagerel =  0.5 }) end),
+
+    key({"Control"}, "u", "Scroll half page up.",
+      function (w) scroll_taboutliner_win(w, { ypagerel = -0.5 }) end),
+
+    key({"Control"}, "f", "Scroll page down.",
+      function (w) scroll_taboutliner_win(w, { ypagerel =  page_step }) end),
+
+    key({"Control"}, "b", "Scroll page up.",
+      function (w) scroll_taboutliner_win(w, { ypagerel = -page_step }) end),
+
+    buf("^gg$", "Go to the top of the document.",
+        function (w, _, m) scroll_taboutliner_win(w, { ypct = m.count }) end, {count=0}),
+
+    buf("^G$", "Go to the bottom of the document.",
+        function (w, _, m) scroll_taboutliner_win(w, { ypct = m.count }) end, {count=100}),
+
+    buf("^%%$", "Go to `[count]` percent of the document.",
+        function (w, _, m) scroll_taboutliner_win(w, { ypct = m.count }) end),
+
 })
 
 function open_taboutliner_window(w)

@@ -3,6 +3,8 @@ const state = {
     collapsed: new Set()
 };
 
+const elementsByUid = new Map();
+
 function Tab(props) {
     let className = "tab";
     if (!props.active) {
@@ -12,6 +14,7 @@ function Tab(props) {
     if (props.uid === state.selected) {
         className += " selected";
         ref = (elem) => {
+            elementsByUid.set(props.uid, elem);
             // make sure the element is scrolled into view
             if (elem) {
                 const rect = elem.getBoundingClientRect();
@@ -21,7 +24,11 @@ function Tab(props) {
                     elem.scrollIntoView(false);
                 }
             }
-        }
+        };
+    } else {
+        ref = (elem) => {
+            elementsByUid.set(props.uid, elem);
+        };
     }
     const hasSubtree = props.subtree && props.subtree.length > 0;
     return (
@@ -124,6 +131,41 @@ command("previous", (data, count = 1) => {
                 state.selected = target.uid;
             }
             break;
+        }
+    }
+    render(data);
+});
+
+command("moveCursorIntoView", (data) => {
+    const selectedElem = elementsByUid.get(state.selected);
+    if (!selectedElem) {
+        return;
+    }
+    const rect = selectedElem.getBoundingClientRect();
+    if (rect.top < 0) {
+        let currentFound = false;
+        // find first visible tab
+        for (let tab of visibleTabs(data.tabs)) {
+            const tabElem = elementsByUid.get(tab.uid);
+            if (tabElem) {
+                const tabRect = tabElem.getBoundingClientRect();
+                if (tabRect.top >= 0) {
+                    state.selected = tab.uid;
+                    break;
+                }
+            }
+        }
+    } else if (rect.bottom > window.innerHeight) {
+        // find last visible tab
+        for (let tab of visibleTabs(data.tabs)) {
+            const tabElem = elementsByUid.get(tab.uid);
+            if (tabElem) {
+                const tabRect = tabElem.getBoundingClientRect();
+                if (tabRect.bottom < window.innerHeight) {
+                    state.selected = tab.uid;
+                    // continue looking
+                }
+            }
         }
     }
     render(data);
