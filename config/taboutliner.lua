@@ -212,6 +212,18 @@ function create_tab(view)
   return tab
 end
 
+function update_title(tab)
+  local v = tab.view
+  if not v then
+    return
+  end
+  if v.uri == "luakit://taboutliner" then
+    tab.title = "Tab outliner"
+  else
+    tab.title = v.title or v.uri or "??"
+  end
+end
+
 function init_webview(view)
   local tab = nil
   if tab_already_created then
@@ -231,11 +243,7 @@ function init_webview(view)
   view:add_signal(
     "property::title", function (v)
       local oldtitle = tab.title
-      if v.uri == "luakit://taboutliner" then
-        tab.title = "Tab outliner"
-      else
-        tab.title = v.title or v.uri or "??"
-      end
+      update_title(tab)
       if oldtitle == tab.title then
         return
       end
@@ -246,6 +254,7 @@ function init_webview(view)
     "property::uri", function (v)
       local olduri = v.uri
       tab.uri = v.uri
+      update_title(tab)
       if olduri == tab.uri then
         return
       end
