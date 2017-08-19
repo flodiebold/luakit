@@ -77,10 +77,15 @@ end
 function save()
   local tabs = save_tab_list(tabtree)
 
+  local data = {
+    tabs = tabs,
+    next_uid = next_uid
+  }
+
   if #tabs > 0 then
     local fh = io.open(tabs_file, "wb")
     fh = io.open(tabs_file .. ".json", "wb")
-    fh:write(json.encode(tabs))
+    fh:write(json.encode(data))
     io.close(fh)
   else
     rm(tabs_file)
@@ -110,10 +115,11 @@ end
 function load()
   if not os.exists(tabs_file) then return end
   local fh = io.open(tabs_file .. ".json", "rb")
-  local tabs = json.decode(fh:read("*all"))
+  local data = json.decode(fh:read("*all"))
   io.close(fh)
-  restore_tab_list(tabs)
-  for _, tab in ipairs(tabs) do
+  next_uid = data.next_uid
+  restore_tab_list(data.tabs)
+  for _, tab in ipairs(data.tabs) do
     table.insert(tabtree, tab)
   end
 end
@@ -248,7 +254,17 @@ function init_webview(view)
   end)
 end
 
+function find(haystack, needle)
+  for i, elem in ipairs(haystack) do
+    if elem == needle then
+      return i
+    end
+  end
+  return nil
+end
+
 function find_tab_index(w, new_tab, subtree_to_search)
+  -- print("search subtree:", subtree_to_search and subtree_to_search.title)
   local max_index = 0
   local subtrees
   if subtree_to_search then
@@ -258,12 +274,11 @@ function find_tab_index(w, new_tab, subtree_to_search)
     subtrees = subtree_to_search.children
     local v = subtree_to_search.view
     if v and webview.window(v) == w then
-      for i, vv in ipairs(w.tabs.children) do
-        if vv == v then
-          max_index = i
-          break
-        end
+      local i = find(w.tabs.children, v)
+      if i then
+        max_index = i
       end
+      -- print("found an active tab with index", i, "max_index now", max_index)
     end
   else
     subtrees = tabtree
@@ -273,26 +288,27 @@ function find_tab_index(w, new_tab, subtree_to_search)
     if index ~= nil and index > max_index then
       max_index = index
     end
+    -- print("max_index now", max_index)
     if found then
+      -- print("found the target, returning", max_index)
       return max_index, true
     end
   end
+  -- print("didn't find the target yet, returning", max_index)
   return max_index, false
 end
-
--- TODO mounting into the tabtree should happen here instead of above:
 
 function _M.taborder_next_sibling (w, newview)
   -- should open after all children of the current tab, as a sibling
   print("taborder_next_sibling", w, newview)
   local current_tab = tab_by_view[w.view]
   local new_tab = tab_by_view[newview]
-  if not current_tab or not new_tab then
+  if not new_tab then
     print("unknown tab!")
     return taborder.last(w, newview)
   end
 
-  new_tab.parent = current_tab.parent
+  new_tab.parent = current_tab and current_tab.parent
   if new_tab.parent then
     table.insert(new_tab.parent.children, new_tab)
   else
@@ -310,7 +326,7 @@ function _M.taborder_below (w, newview)
   print("taborder_below", w, newview)
   local current_tab = tab_by_view[w.view]
   local new_tab = tab_by_view[newview]
-  if not current_tab or not new_tab then
+  if not new_tab then
     print("unknown tab!")
     return taborder.last(w, newview)
   end
@@ -331,6 +347,15 @@ taborder.default_bg = _M.taborder_below
 
 function archive_tab(tab)
   print("archive tab", tab.title)
+  local parent_list
+  if tab.parent then
+    parent_list = tab.parent.children
+  else
+    parent_list = tabtree
+  end
+  local index = find(parent_list, tab)
+  table.remove(parent_list, index)
+  tabtree.emit_signal("changed")
 end
 
 function on_tab_close(w, view)
