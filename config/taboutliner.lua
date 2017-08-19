@@ -49,7 +49,8 @@ local tab_by_uid = setmetatable({}, { __mode = "v" })
 local tab_already_created = nil
 
 -- i/o
-tabs_file = luakit.data_dir .. "/tabs"
+tabs_file = luakit.data_dir .. "/tabs.json"
+archive = luakit.data_dir .. "/archive.json"
 
 local function rm(file)
   luakit.spawn(string.format("rm %q", file))
@@ -83,8 +84,7 @@ function save()
   }
 
   if #tabs > 0 then
-    local fh = io.open(tabs_file, "wb")
-    fh = io.open(tabs_file .. ".json", "wb")
+    local fh = io.open(tabs_file, "w")
     fh:write(json.encode(data))
     io.close(fh)
   else
@@ -114,7 +114,7 @@ end
 
 function load()
   if not os.exists(tabs_file) then return end
-  local fh = io.open(tabs_file .. ".json", "rb")
+  local fh = io.open(tabs_file, "r")
   local data = json.decode(fh:read("*all"))
   io.close(fh)
   next_uid = data.next_uid
@@ -172,6 +172,13 @@ session.add_signal(
     -- now listen for new tabs
     webview.add_signal("init", init_webview)
 end)
+
+function write_archive_entry(data)
+  local fh = io.open(archive, "a")
+  fh:write(json.encode(data))
+  fh:write("\n")
+  io.close(fh)
+end
 
 -- json import
 function trim(s)
@@ -356,6 +363,16 @@ taborder.default_bg = _M.taborder_below
 
 function archive_tab(tab)
   print("archive tab", tab.title)
+
+  local archive_entry = {
+    typ = tab.typ,
+    title = tab.title,
+    uri = tab.uri,
+    uid = tab.uid,
+    parent = tab.parent and tab.parent.uid
+  }
+  write_archive_entry(archive_entry)
+
   local parent_list
   if tab.parent then
     parent_list = tab.parent.children
