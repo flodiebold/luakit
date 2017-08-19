@@ -25,7 +25,8 @@ function exp() {
             break;
         case "savedtab":
         case "tab":
-            tab.title = node.marks.customTitle || node.chromeTabObj.title;
+            tab.title = node.chromeTabObj.title;
+            tab.comment = node.marks.customTitle;
             tab.typ = "tab";
             tab.uri = node.chromeTabObj.url;
             break;

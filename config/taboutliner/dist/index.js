@@ -27,7 +27,7 @@ function Tab(props) {
         };
     }
     const hasSubtree = props.subtree && props.subtree.length > 0;
-    return createVNode(2, "li", "tab-subtree", [createVNode(2, "div", className, [props.title, hasSubtree && props.collapsed && createVNode(2, "span", "ellipsis", "(...)")], null, null, ref), hasSubtree && !props.collapsed && createVNode(16, TabList, null, null, {
+    return createVNode(2, "li", "tab-subtree", [createVNode(2, "div", className, [props.title, props.comment && createVNode(2, "span", "comment", [" ~ ", props.comment]), hasSubtree && props.collapsed && createVNode(2, "span", "ellipsis", "(...)")], null, null, ref), hasSubtree && !props.collapsed && createVNode(16, TabList, null, null, {
         "subtree": true,
         "tabs": props.subtree
     })]);

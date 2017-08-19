@@ -67,6 +67,9 @@ function save_tab_list(tabs)
       favicon = tab.favicon,
       children = save_tab_list(tab.children)
     }
+    if tab.comment then
+      saved_tabs[i].comment = tab.comment
+    end
   end
   return saved_tabs
 end
@@ -407,7 +410,8 @@ function build_tree_for_js(tabs)
       active = (tab.view ~= nil),
       uid = tab.uid,
       collapsed = tab.collapsed == true,
-      children = build_tree_for_js(tab.children)
+      children = build_tree_for_js(tab.children),
+      comment = tab.comment
     }
     table.insert(js_tabs, js_tab)
   end

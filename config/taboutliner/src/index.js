@@ -28,6 +28,7 @@ function Tab(props) {
         <li className="tab-subtree">
           <div className={className} ref={ref}>
             {props.title}
+            {props.comment && <span className="comment"> ~ {props.comment}</span>}
             {hasSubtree && props.collapsed && <span className="ellipsis">(...)</span>}
           </div>
           {hasSubtree && !props.collapsed && <TabList subtree={true} tabs={props.subtree} />}

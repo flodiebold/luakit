@@ -24,6 +24,10 @@
     border-left: 2px solid #b58900;
 }
 
+.tab .comment {
+    color: #839496;
+}
+
 .tab .ellipsis {
     margin-left: 1em;
     color: #586e75;
