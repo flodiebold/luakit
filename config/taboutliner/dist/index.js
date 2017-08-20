@@ -161,6 +161,28 @@ command("moveCursorIntoView", data => {
     render(data);
 });
 
+command("goToLine", (data, line = 1) => {
+    for (let tab of visibleTabs(data.tabs)) {
+        if (line <= 1) {
+            state.selected = tab.uid;
+            break;
+        }
+        line--;
+    }
+    render(data);
+});
+
+command("goToEnd", data => {
+    let lastTab;
+    for (let tab of visibleTabs(data.tabs)) {
+        lastTab = tab;
+    }
+    if (lastTab) {
+        state.selected = lastTab.uid;
+    }
+    render(data);
+});
+
 window.getSelected = function () {
     return state.selected;
 };

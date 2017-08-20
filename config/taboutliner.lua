@@ -13,6 +13,8 @@ local new_mode, get_mode = modes.new_mode, modes.get_mode
 
 local taborder = require("taborder")
 
+local join = lousy.util.table.join
+
 -- TODO move these somewhere else (factor out with binds.lua)
 -- Add binds to a mode
 local function add_binds(mode, binds, before)
@@ -509,7 +511,6 @@ chrome.add(
 )
 
 function scroll_taboutliner_win(w, scroll)
-  print("scroll view")
   w:scroll(scroll)
   w.view:eval_js("moveCursorIntoView()", { no_return = true })
 end
@@ -562,12 +563,6 @@ add_binds(
     key({}, "Escape", "No escape!", function (w)
         print("You won't escape me!")
     end),
-    key({}, "e", "Select previous", function (w)
-        w.view:eval_js("previous()", { no_return = true })
-    end),
-    key({}, "n", "Select next", function (w)
-        w.view:eval_js("next()", { no_return = true })
-    end),
     key({}, "Tab", "Collapse/uncollapse", function (w)
         w.view:eval_js("getSelected()", { callback = toggle_collapse })
     end),
@@ -594,11 +589,26 @@ add_binds(
     key({"Control"}, "b", "Scroll page up.",
       function (w) scroll_taboutliner_win(w, { ypagerel = -page_step }) end),
 
+    buf("^e$", "Select previous", function (w, _, m)
+        w.view:eval_js("previous(" .. m.count .. ")", { no_return = true })
+    end, {count=1}),
+    buf("^n$", "Select next", function (w, _, m)
+        w.view:eval_js("next(" .. m.count .. ")", { no_return = true })
+    end, {count=1}),
+
     buf("^gg$", "Go to the top of the document.",
-        function (w, _, m) scroll_taboutliner_win(w, { ypct = m.count }) end, {count=0}),
+        function (w, _, m)
+          w.view:eval_js("goToLine(" .. m.count .. ")", { no_return = true })
+        end, {count=1}),
 
     buf("^G$", "Go to the bottom of the document.",
-        function (w, _, m) scroll_taboutliner_win(w, { ypct = m.count }) end, {count=100}),
+        function (w, _, m)
+          if m.count ~= nil then
+            w.view:eval_js("goToLine(" .. m.count .. ")", { no_return = true })
+          else
+            w.view:eval_js("goToEnd()", { no_return = true })
+          end
+        end, {count=nil}),
 
     buf("^%%$", "Go to `[count]` percent of the document.",
         function (w, _, m) scroll_taboutliner_win(w, { ypct = m.count }) end),

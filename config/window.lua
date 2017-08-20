@@ -248,7 +248,7 @@ window.methods = {
     -- Wrapper around the bind plugin's hit method
     hit = function (w, mods, key, opts)
         opts = lousy.util.table.join(opts or {}, {
-            enable_buffer = w:is_mode("normal"),
+            enable_buffer = w:is_mode("normal") or w:is_mode("taboutliner"), -- TODO implement a better way to do this
             buffer = w.buffer,
         })
 
