@@ -183,6 +183,11 @@ command("goToEnd", data => {
     render(data);
 });
 
+command("select", (data, uid) => {
+    state.selected = uid;
+    render(data);
+});
+
 window.getSelected = function () {
     return state.selected;
 };

@@ -515,6 +515,15 @@ function scroll_taboutliner_win(w, scroll)
   w.view:eval_js("moveCursorIntoView()", { no_return = true })
 end
 
+function last_window_except(w)
+  -- TODO make this actually the most recent window
+  for _, ww in pairs(window.bywidget) do
+    if ww ~= w then
+      return ww
+    end
+  end
+end
+
 new_mode(
   "taboutliner", "Mode for the taboutliner window", {
     enter = function (w)
@@ -599,6 +608,16 @@ add_binds(
     buf("^gg$", "Go to the top of the document.",
         function (w, _, m)
           w.view:eval_js("goToLine(" .. m.count .. ")", { no_return = true })
+        end, {count=1}),
+
+    buf("^gl$", "Go to the current tab of the most recently active window.",
+        function (w, _, m)
+          local last_win = last_window_except(w)
+          local current_view = last_win.tabs.children[last_win.tabs:current()]
+          local current_tab = tab_by_view[current_view]
+          if current_tab then
+            w.view:eval_js("select(" .. current_tab.uid .. ")", { no_return = true })
+          end
         end, {count=1}),
 
     buf("^G$", "Go to the bottom of the document.",
