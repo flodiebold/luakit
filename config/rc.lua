@@ -182,6 +182,8 @@ require "helm"
 
 require "taboutliner"
 
+require "zoom"
+
 -----------------------------
 -- End user script loading --
 -----------------------------

@@ -23,15 +23,16 @@ local globals = {
 -- it to avoid collisions with lua's string.format characters.
 -- See: http://www.lua.org/manual/5.1/manual.html#pdf-string.format
 globals.search_engines = {
-    duckduckgo  = "https://duckduckgo.com/?q=%s",
-    github      = "https://github.com/search?q=%s",
-    google      = "https://google.com/search?q=%s",
-    imdb        = "http://www.imdb.com/find?s=all&q=%s",
-    wikipedia   = "https://en.wikipedia.org/wiki/Special:Search?search=%s",
+    ddg = "https://duckduckgo.com/?q=%s",
+    gh = "https://github.com/search?q=%s",
+    g = "https://google.com/search?q=%s",
+    wp = "https://en.wikipedia.org/wiki/Special:Search?search=%s",
+    w = "https://en.wikipedia.org/wiki/Special:Search?search=%s",
+    dw = "https://de.wikipedia.org/wiki/Spezial:Suche?search=%s",
 }
 
 -- Set google as fallback search engine
-globals.search_engines.default = globals.search_engines.google
+globals.search_engines.default = globals.search_engines.ddg
 -- Use this instead to disable auto-searching
 --search_engines.default = "%s"
 
